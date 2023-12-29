@@ -4,10 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pandas
-numpy
-streamlit
-scipy
+pandas = "2.1.4"
+numpy = "1.26.2"
+streamlit = "1.29.0"
+scipy = "1.11.4"
 
 [dev-packages]
 
