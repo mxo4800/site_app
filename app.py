@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import norm, beta
 from helper import boot_site, bi_site, bay_site
+from cpa_helper import boot_site_cvr, bi_site_cvr, bay_site_cvr
 
 
 def main():
@@ -28,22 +29,37 @@ def main():
             if not imp_bool:
                 st.write("No impression column")
 
-        clicks_bool = "Clicks" in data.columns
-        if not clicks_bool:
-            st.write("No click column")
+        calcuate_ctr = st.checkbox("Do you want exclusion/inclusion list based on CTR?")
+        if calcuate_ctr:
+            clicks_bool = "Clicks" in data.columns
+            if not clicks_bool:
+                st.write("No click column")
 
-        if imp_bool and clicks_bool:
-            ctr_bool = "CTR %" in data.columns
-            if not ctr_bool:
-                ctr_bool_two = "CTR" in data.columns
-                if ctr_bool_two:
-                    data["CTR %"] = data["CTR"]
-                else:
+            if imp_bool and clicks_bool:
+                ctr_bool = "CTR %" in data.columns
+                if not ctr_bool:
+                    ctr_bool_two = "CTR" in data.columns
+                    if ctr_bool_two:
+                        data["CTR %"] = data["CTR"]
+                    else:
+                        try:
+                            data["CTR %"] = data.Clicks / data.Imps
+                        except:
+                            st.write("Not possible to calcuate CTR")
+        
+        calcuate_cvr = st.checkbox("Do you want exclusion/inclusion list based on CVR?")
+        if calcuate_cvr:
+            convs_bool = "Total Conversions" in data.columns
+            if not convs_bool:
+                st.write("No conversions column -- case senstive need column to be named 'Total Conversions' ")
+            
+            if imp_bool and convs_bool:
+                cvr_bool = "CVR" in data.columns
+                if not cvr_bool:
                     try:
-                        data["CTR %"] = data.Clicks / data.Imps
+                        data["CVR"] = data["Total Conversions"] / data["Imps"]
                     except:
-                        st.write("Not possible to calcuate CTR")
-
+                        st.write("Not possible to calcuate CVR")
 
         method = st.selectbox("Choose the analysis method", 
                               ["Bootstrapping", "Binomial", "Bayesian"])
@@ -64,25 +80,51 @@ def main():
 
         if st.button('Analyze'):
             if method == "Bootstrapping":
-                high_ctrs, low_ctrs = boot_site(data, threshold=threshold, n_bootstrap=n_bootstrap)
-                st.write("High CTR Sites")
-                st.dataframe(high_ctrs)
-                st.write("Low CTR Sites")
-                st.dataframe(low_ctrs)
+                
+                if calcuate_ctr:
+                    high_ctrs, low_ctrs = boot_site(data, threshold=threshold, n_bootstrap=n_bootstrap)
+                    st.write("High CTR Sites")
+                    st.dataframe(high_ctrs)
+                    st.write("Low CTR Sites")
+                    st.dataframe(low_ctrs)
+
+                if calcuate_cvr:
+                    high_cvrs, low_cvrs = boot_site_cvr(data, threshold=threshold, n_bootstrap=n_bootstrap)
+                    st.write("High CVR Sites")
+                    st.dataframe(high_cvrs)
+                    st.write("Low CVR Sites")
+                    st.dataframe(low_cvrs)
 
             elif method == "Binomial":
-                high_ctrs, low_ctrs = bi_site(data, threshold=threshold, confidence_level=confidence_level)
-                st.write("High CTR Sites")
-                st.dataframe(high_ctrs)
-                st.write("Low CTR Sites")
-                st.dataframe(low_ctrs)
+                    
+                if calcuate_ctr:
+                    high_ctrs, low_ctrs = bi_site(data, threshold=threshold, confidence_level=confidence_level)
+                    st.write("High CTR Sites")
+                    st.dataframe(high_ctrs)
+                    st.write("Low CTR Sites")
+                    st.dataframe(low_ctrs)
+
+                if calcuate_cvr:
+                    high_cvrs, low_cvrs = bi_site_cvr(data, threshold=threshold, confidence_level=confidence_level)
+                    st.write("High CVR Sites")
+                    st.dataframe(high_cvrs)
+                    st.write("Low CVR Sites")
+                    st.dataframe(low_cvrs)
 
             elif method == "Bayesian":
-                high_ctrs, low_ctrs = bay_site(data, threshold=threshold, alpha_prior=alpha_prior, beta_prior=beta_prior)
-                st.write("High CTR Sites")
-                st.dataframe(high_ctrs)
-                st.write("Low CTR Sites")
-                st.dataframe(low_ctrs)
+                if calcuate_ctr:
+                    high_ctrs, low_ctrs = bay_site(data, threshold=threshold, alpha_prior=alpha_prior, beta_prior=beta_prior)
+                    st.write("High CTR Sites")
+                    st.dataframe(high_ctrs)
+                    st.write("Low CTR Sites")
+                    st.dataframe(low_ctrs)
+
+                if calcuate_cvr:
+                    high_cvrs, low_cvrs = bay_site_cvr(data, threshold=threshold, alpha_prior=alpha_prior, beta_prior=beta_prior)
+                    st.write("High CVR Sites")
+                    st.dataframe(high_cvrs)
+                    st.write("Low CVR Sites")
+                    st.dataframe(low_cvrs)
 
 if __name__ == "__main__":
     main()
